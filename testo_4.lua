@@ -8,11 +8,10 @@ local settings = {
 -- 📦 Сервисы
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
--- 📦 Drawing ESP-хранилище
+-- 📦 Переменные
 local espCache = {}
 local espEnabled = false
 
@@ -21,9 +20,9 @@ local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "ESP_Menu"
 gui.ResetOnSpawn = false
 
--- Основная рамка (как на картинке)
+-- 🪟 Главное окно (размер как на твоём скрине)
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 400, 0, 180) -- размер как на скрине
+frame.Size = UDim2.new(0, 400, 0, 180)
 frame.Position = UDim2.new(0, 50, 0, 150)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
@@ -31,7 +30,7 @@ frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
 
--- Заголовок
+-- 🧱 Заголовок
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
@@ -41,19 +40,20 @@ title.Font = Enum.Font.SourceSansBold
 title.TextSize = 24
 title.BorderSizePixel = 0
 
--- Кнопка ESP
+-- 🔘 Кнопка включения ESP (меньше и справа снизу)
 local toggle = Instance.new("TextButton", frame)
-toggle.Position = UDim2.new(0, 100, 0, 80)
-toggle.Size = UDim2.new(0, 200, 0, 50)
+toggle.Size = UDim2.new(0, 120, 0, 32)
+toggle.Position = UDim2.new(1, -130, 1, -42)
+toggle.AnchorPoint = Vector2.new(0, 0)
 toggle.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-toggle.Text = "Box ESP: OFF"
+toggle.Text = "ESP: OFF"
 toggle.TextColor3 = Color3.new(1, 1, 1)
 toggle.Font = Enum.Font.SourceSans
-toggle.TextSize = 20
+toggle.TextSize = 18
 toggle.BorderSizePixel = 0
 toggle.Parent = frame
 
--- 📦 Создание бокса
+-- 📦 Drawing ESP Box
 local function createBox()
 	local box = Drawing.new("Square")
 	box.Visible = false
@@ -106,10 +106,10 @@ local function updateEsp(player, data)
 	data.Box.Visible = true
 end
 
--- 📦 Переключатель
+-- 🟢 Кнопка-переключатель
 toggle.MouseButton1Click:Connect(function()
 	espEnabled = not espEnabled
-	toggle.Text = "Box ESP: " .. (espEnabled and "ON" or "OFF")
+	toggle.Text = "ESP: " .. (espEnabled and "ON" or "OFF")
 	if not espEnabled then
 		for _, v in pairs(espCache) do
 			v.Box.Visible = false
@@ -117,7 +117,7 @@ toggle.MouseButton1Click:Connect(function()
 	end
 end)
 
--- 📦 Подключение игроков
+-- 📦 Обработка игроков
 for _, p in pairs(Players:GetPlayers()) do
 	if p ~= LocalPlayer then
 		addEsp(p)
