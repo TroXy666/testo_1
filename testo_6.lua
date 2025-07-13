@@ -15,7 +15,7 @@ local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "RoleESP_GUI"
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 400, 0, 220)
+frame.Size = UDim2.new(0, 400, 0, 180)
 frame.Position = UDim2.new(0, 50, 0, 150)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.Active = true
@@ -30,37 +30,42 @@ title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 24
 
--- 🔘 Кнопка All
+-- 📌 Размер и позиция для компактных кнопок
+local btnWidth = 120
+local btnHeight = 32
+local btnOffsetY = 50
+
+-- 🔘 All ESP Button
 local allBtn = Instance.new("TextButton", frame)
-allBtn.Size = UDim2.new(0, 160, 0, 40)
-allBtn.Position = UDim2.new(0, 20, 0, 60)
+allBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
+allBtn.Position = UDim2.new(0, 20, 0, btnOffsetY)
 allBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-allBtn.Text = "Box ESP: OFF"
+allBtn.Text = "Box: OFF"
 allBtn.TextColor3 = Color3.new(1, 1, 1)
 allBtn.Font = Enum.Font.SourceSans
-allBtn.TextSize = 18
+allBtn.TextSize = 16
 
--- 🔪 Murderer
+-- 🔪 Murderer Button
 local murderBtn = Instance.new("TextButton", frame)
-murderBtn.Size = UDim2.new(0, 160, 0, 40)
-murderBtn.Position = UDim2.new(0, 20, 0, 110)
+murderBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
+murderBtn.Position = UDim2.new(0, 150, 0, btnOffsetY)
 murderBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
-murderBtn.Text = "Murderer ESP: OFF"
+murderBtn.Text = "Murder: OFF"
 murderBtn.TextColor3 = Color3.new(1, 1, 1)
 murderBtn.Font = Enum.Font.SourceSans
-murderBtn.TextSize = 18
+murderBtn.TextSize = 16
 
--- 🔫 Sheriff
+-- 🔫 Sheriff Button
 local sheriffBtn = Instance.new("TextButton", frame)
-sheriffBtn.Size = UDim2.new(0, 160, 0, 40)
-sheriffBtn.Position = UDim2.new(0, 20, 0, 160)
+sheriffBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
+sheriffBtn.Position = UDim2.new(0, 280, 0, btnOffsetY)
 sheriffBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 60)
-sheriffBtn.Text = "Sheriff ESP: OFF"
+sheriffBtn.Text = "Sheriff: OFF"
 sheriffBtn.TextColor3 = Color3.new(1, 1, 1)
 sheriffBtn.Font = Enum.Font.SourceSans
-sheriffBtn.TextSize = 18
+sheriffBtn.TextSize = 16
 
--- 📦 Создание боксов
+-- 📦 Создание бокса
 local function createBox(color)
 	local box = Drawing.new("Square")
 	box.Visible = false
@@ -158,23 +163,7 @@ local function updateEsp(player, data)
 	end
 end
 
--- 📦 Кнопки
-allBtn.MouseButton1Click:Connect(function()
-	showAllESP = not showAllESP
-	allBtn.Text = "Box ESP: " .. (showAllESP and "ON" or "OFF")
-end)
-
-murderBtn.MouseButton1Click:Connect(function()
-	showMurdererESP = not showMurdererESP
-	murderBtn.Text = "Murderer ESP: " .. (showMurdererESP and "ON" or "OFF")
-end)
-
-sheriffBtn.MouseButton1Click:Connect(function()
-	showSheriffESP = not showSheriffESP
-	sheriffBtn.Text = "Sheriff ESP: " .. (showSheriffESP and "ON" or "OFF")
-end)
-
--- 📦 Игроки
+-- 📦 Обработка игроков
 for _, p in pairs(Players:GetPlayers()) do
 	if p ~= LocalPlayer then
 		addEsp(p)
@@ -189,7 +178,23 @@ end)
 
 Players.PlayerRemoving:Connect(removeEsp)
 
--- 📦 Цикл
+-- 📦 Кнопки
+allBtn.MouseButton1Click:Connect(function()
+	showAllESP = not showAllESP
+	allBtn.Text = "Box: " .. (showAllESP and "ON" or "OFF")
+end)
+
+murderBtn.MouseButton1Click:Connect(function()
+	showMurdererESP = not showMurdererESP
+	murderBtn.Text = "Murder: " .. (showMurdererESP and "ON" or "OFF")
+end)
+
+sheriffBtn.MouseButton1Click:Connect(function()
+	showSheriffESP = not showSheriffESP
+	sheriffBtn.Text = "Sheriff: " .. (showSheriffESP and "ON" or "OFF")
+end)
+
+-- 📦 Цикл ESP
 RunService.RenderStepped:Connect(function()
 	for player, data in pairs(espCache) do
 		if player and player ~= LocalPlayer then
