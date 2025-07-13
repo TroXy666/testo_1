@@ -30,12 +30,12 @@ title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 24
 
--- 📌 Размер и позиция для компактных кнопок
-local btnWidth = 120
+-- 📌 Размер и позиция для компактных и вписывающихся кнопок
+local btnWidth = 110
 local btnHeight = 32
 local btnOffsetY = 50
 
--- 🔘 All ESP Button
+-- 🔘 Box ESP Button
 local allBtn = Instance.new("TextButton", frame)
 allBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
 allBtn.Position = UDim2.new(0, 20, 0, btnOffsetY)
@@ -48,8 +48,8 @@ allBtn.TextSize = 16
 -- 🔪 Murderer Button
 local murderBtn = Instance.new("TextButton", frame)
 murderBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
-murderBtn.Position = UDim2.new(0, 150, 0, btnOffsetY)
-murderBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+murderBtn.Position = UDim2.new(0, 140, 0, btnOffsetY) -- 20 + 110 + 10
+murderBtn.BackgroundColor3 = Color3.fromRGB(90, 0, 0)
 murderBtn.Text = "Murder: OFF"
 murderBtn.TextColor3 = Color3.new(1, 1, 1)
 murderBtn.Font = Enum.Font.SourceSans
@@ -58,12 +58,13 @@ murderBtn.TextSize = 16
 -- 🔫 Sheriff Button
 local sheriffBtn = Instance.new("TextButton", frame)
 sheriffBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
-sheriffBtn.Position = UDim2.new(0, 280, 0, btnOffsetY)
-sheriffBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 60)
+sheriffBtn.Position = UDim2.new(0, 260, 0, btnOffsetY) -- 140 + 110 + 10
+sheriffBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 90)
 sheriffBtn.Text = "Sheriff: OFF"
 sheriffBtn.TextColor3 = Color3.new(1, 1, 1)
 sheriffBtn.Font = Enum.Font.SourceSans
 sheriffBtn.TextSize = 16
+
 
 -- 📦 Создание бокса
 local function createBox(color)
