@@ -1,4 +1,4 @@
--- 📦 Сервисы
+-- Сервисы
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -16,6 +16,11 @@ _G.outlineSheriffEnabled = false
 _G.tracerAllEnabled = false
 _G.tracerMurderEnabled = false
 _G.tracerSheriffEnabled = false
+_G.otherNameEnabled = false
+_G.otherDistanceEnabled = false
+_G.otherPingEnabled = false
+_G.otherSkeletonEnabled = false
+_G.otherRoleEnabled = false
 
 -- Box ESP
 local espCache = {}
@@ -60,6 +65,8 @@ local function removeEsp(player)
     if tracerLines.All[player] then tracerLines.All[player]:Remove() tracerLines.All[player] = nil end
     if tracerLines.Murder[player] then tracerLines.Murder[player]:Remove() tracerLines.Murder[player] = nil end
     if tracerLines.Sheriff[player] then tracerLines.Sheriff[player]:Remove() tracerLines.Sheriff[player] = nil end
+    if billboards[player] then billboards[player]:Destroy() billboards[player] = nil end
+    if skeletonLines[player] then for _, l in pairs(skeletonLines[player]) do l:Remove() end skeletonLines[player] = nil end
 end
 
 local function updateEsp(player, boxes)
@@ -264,12 +271,148 @@ local function updateTracers()
     end
 end
 
--- 📦 GUI
+-- Other: Name, Distance, Ping, Role (BillboardGui) + Skeleton (Drawing)
+local billboards = {}
+local skeletonJoints = {
+    {"Head", "UpperTorso"},
+    {"UpperTorso", "LowerTorso"},
+    {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+    {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+    {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+    {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
+}
+local skeletonLines = {}
+
+local function updateBillboards()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then
+            if billboards[player] then
+                billboards[player]:Destroy()
+                billboards[player] = nil
+            end
+            continue
+        end
+
+        local char = player.Character
+        local head = char and char:FindFirstChild("Head")
+        if head and (_G.otherNameEnabled or _G.otherDistanceEnabled or _G.otherPingEnabled or _G.otherRoleEnabled) then
+            if not billboards[player] then
+                local gui = Instance.new("BillboardGui")
+                gui.AlwaysOnTop = true
+                gui.Size = UDim2.new(5,0,1,0)
+                gui.StudsOffset = Vector3.new(0, 3, 0)
+                gui.Adornee = head
+
+                local label = Instance.new("TextLabel", gui)
+                label.Size = UDim2.new(1,0,1,0)
+                label.BackgroundTransparency = 1
+                label.TextStrokeTransparency = 0.5
+                label.Font = Enum.Font.SourceSansBold
+                label.TextColor3 = Color3.fromRGB(255,255,255)
+                label.TextScaled = true
+                billboards[player] = gui
+                gui.Parent = CoreGui
+            end
+
+            local textTable = {}
+
+            if _G.otherNameEnabled then
+                table.insert(textTable, player.DisplayName or player.Name)
+            end
+            if _G.otherDistanceEnabled then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (hrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                    table.insert(textTable, ("%.0f studs"):format(dist))
+                end
+            end
+            if _G.otherPingEnabled then
+                local ping = "?"
+                pcall(function()
+                    ping = math.floor(tonumber(LocalPlayer:GetNetworkPing() * 1000)) .. " ms"
+                end)
+                table.insert(textTable, ping)
+            end
+            if _G.otherRoleEnabled then
+                table.insert(textTable, getRole(player))
+            end
+
+            billboards[player].TextLabel.Text = table.concat(textTable, " | ")
+            billboards[player].Adornee = head
+            billboards[player].Enabled = true
+        else
+            if billboards[player] then
+                billboards[player].Enabled = false
+            end
+        end
+    end
+end
+
+local function updateSkeletons()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then
+            if skeletonLines[player] then
+                for _, l in pairs(skeletonLines[player]) do l:Remove() end
+                skeletonLines[player] = nil
+            end
+            continue
+        end
+        if not _G.otherSkeletonEnabled then
+            if skeletonLines[player] then
+                for _, l in pairs(skeletonLines[player]) do l.Visible = false end
+            end
+            continue
+        end
+
+        local char = player.Character
+        if not char then
+            if skeletonLines[player] then
+                for _, l in pairs(skeletonLines[player]) do l.Visible = false end
+            end
+            continue
+        end
+        if not skeletonLines[player] then
+            skeletonLines[player] = {}
+            for _ = 1, #skeletonJoints do
+                local line = Drawing.new("Line")
+                line.Visible = false
+                line.Color = Color3.fromRGB(0, 255, 0)
+                line.Thickness = 2
+                table.insert(skeletonLines[player], line)
+            end
+        end
+        for i, joint in ipairs(skeletonJoints) do
+            local a = char:FindFirstChild(joint[1])
+            local b = char:FindFirstChild(joint[2])
+            if a and b then
+                local a2, aok = Camera:WorldToViewportPoint(a.Position)
+                local b2, bok = Camera:WorldToViewportPoint(b.Position)
+                if aok and bok then
+                    local l = skeletonLines[player][i]
+                    l.From = Vector2.new(a2.X, a2.Y)
+                    l.To = Vector2.new(b2.X, b2.Y)
+                    l.Visible = true
+                else
+                    skeletonLines[player][i].Visible = false
+                end
+            else
+                skeletonLines[player][i].Visible = false
+            end
+        end
+    end
+end
+
+Players.PlayerRemoving:Connect(function(player)
+    if billboards[player] then billboards[player]:Destroy() billboards[player] = nil end
+    if skeletonLines[player] then for _, l in pairs(skeletonLines[player]) do l:Remove() end skeletonLines[player] = nil end
+end)
+
+-- GUI
 local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "RoleESP_GUI"
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 400, 0, 430)
-frame.Position = UDim2.new(0.5, -200, 0.5, -215)
+frame.Size = UDim2.new(0, 400, 0, 600)
+frame.Position = UDim2.new(0.5, -200, 0.5, -300)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -409,6 +552,69 @@ createTracerCheckbox("Tracer Murder", 310, "tracerMurderEnabled")
 createTracerCheckbox("Tracer Sheriff", 340, "tracerSheriffEnabled")
 createTracerCheckbox("Tracer All", 370, "tracerAllEnabled")
 
+-- OTHER раздел
+local otherLabel = Instance.new("TextLabel")
+otherLabel.Size = UDim2.new(1, -20, 0, 22)
+otherLabel.Position = UDim2.new(0, 20, 0, 405)
+otherLabel.BackgroundTransparency = 1
+otherLabel.Text = "other"
+otherLabel.Font = Enum.Font.SourceSansBold
+otherLabel.TextSize = 16
+otherLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+otherLabel.TextXAlignment = Enum.TextXAlignment.Left
+otherLabel.Parent = frame
+
+local function createOtherCheckbox(labelText, offsetY, flagName)
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Size = UDim2.new(0, 180, 0, 22)
+    toggleFrame.Position = UDim2.new(0, 20, 0, offsetY)
+    toggleFrame.BackgroundTransparency = 1
+    toggleFrame.Parent = frame
+
+    local box = Instance.new("TextButton")
+    box.Size = UDim2.new(0, 18, 0, 18)
+    box.Position = UDim2.new(0, 0, 0, 2)
+    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    box.BorderColor3 = Color3.fromRGB(120, 120, 120)
+    box.Text = ""
+    box.AutoButtonColor = false
+    box.Parent = toggleFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -22, 1, 0)
+    label.Position = UDim2.new(0, 22, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 16
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = toggleFrame
+
+    local check = Instance.new("TextLabel")
+    check.Size = UDim2.new(1, 0, 1, 0)
+    check.BackgroundTransparency = 1
+    check.Text = "✔"
+    check.TextColor3 = Color3.fromRGB(0, 170, 255)
+    check.TextSize = 16
+    check.Font = Enum.Font.SourceSansBold
+    check.Visible = false
+    check.Parent = box
+
+    local state = false
+    box.MouseButton1Click:Connect(function()
+        state = not state
+        check.Visible = state
+        _G[flagName] = state
+    end)
+end
+
+createOtherCheckbox("Name",     430, "otherNameEnabled")
+createOtherCheckbox("Distance", 460, "otherDistanceEnabled")
+createOtherCheckbox("Ping",     490, "otherPingEnabled")
+createOtherCheckbox("Skeleton", 520, "otherSkeletonEnabled")
+createOtherCheckbox("Role",     550, "otherRoleEnabled")
+
 UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.Insert then
         frame.Visible = not frame.Visible
@@ -433,6 +639,8 @@ Players.PlayerRemoving:Connect(function(player)
     if tracerLines.All[player] then tracerLines.All[player]:Remove() tracerLines.All[player] = nil end
     if tracerLines.Murder[player] then tracerLines.Murder[player]:Remove() tracerLines.Murder[player] = nil end
     if tracerLines.Sheriff[player] then tracerLines.Sheriff[player]:Remove() tracerLines.Sheriff[player] = nil end
+    if billboards[player] then billboards[player]:Destroy() billboards[player] = nil end
+    if skeletonLines[player] then for _, l in pairs(skeletonLines[player]) do l:Remove() end skeletonLines[player] = nil end
 end)
 
 RunService.RenderStepped:Connect(function()
@@ -443,4 +651,6 @@ RunService.RenderStepped:Connect(function()
     end
     updateOutlineEsp()
     updateTracers()
+    updateBillboards()
+    updateSkeletons()
 end)
