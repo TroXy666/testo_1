@@ -13,6 +13,7 @@ _G.espSheriffEnabled = false
 _G.outlineEspEnabled = false
 _G.outlineMurderEnabled = false
 _G.outlineSheriffEnabled = false
+_G.tracerAllEnabled = false
 _G.tracerMurderEnabled = false
 _G.tracerSheriffEnabled = false
 
@@ -56,6 +57,7 @@ local function removeEsp(player)
         outlineHighlights[player]:Destroy()
         outlineHighlights[player] = nil
     end
+    if tracerLines.All[player] then tracerLines.All[player]:Remove() tracerLines.All[player] = nil end
     if tracerLines.Murder[player] then tracerLines.Murder[player]:Remove() tracerLines.Murder[player] = nil end
     if tracerLines.Sheriff[player] then tracerLines.Sheriff[player]:Remove() tracerLines.Sheriff[player] = nil end
 end
@@ -144,22 +146,58 @@ local function updateOutlineEsp()
     end
 end
 
--- Tracer ESP
-local tracerLines = { Murder = {}, Sheriff = {} }
+-- Tracer ESP (All, Murder, Sheriff)
+local tracerLines = { All = {}, Murder = {}, Sheriff = {} }
 local function getTracerLine(t)
     local l = Drawing.new("Line")
     l.Visible = false
     l.Thickness = 2
-    l.Color = t == "Murder" and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 150, 255)
+    if t == "Murder" then
+        l.Color = Color3.fromRGB(255, 0, 0)
+    elseif t == "Sheriff" then
+        l.Color = Color3.fromRGB(0, 150, 255)
+    else
+        l.Color = Color3.fromRGB(255,255,255)
+    end
     return l
 end
+
 local function removeAllTracers()
     for _, t in pairs(tracerLines) do
         for _, line in pairs(t) do if line then line:Remove() end end
         table.clear(t)
     end
 end
+
 local function updateTracers()
+    -- All
+    if _G.tracerAllEnabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                if not tracerLines.All[player] then
+                    tracerLines.All[player] = getTracerLine("All")
+                end
+                local char = player.Character
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local pos, vis = Camera:WorldToViewportPoint(hrp.Position)
+                    if vis then
+                        tracerLines.All[player].From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                        tracerLines.All[player].To = Vector2.new(pos.X, pos.Y)
+                        tracerLines.All[player].Visible = true
+                    else
+                        tracerLines.All[player].Visible = false
+                    end
+                else
+                    tracerLines.All[player].Visible = false
+                end
+            elseif tracerLines.All[player] then
+                tracerLines.All[player].Visible = false
+            end
+        end
+    else
+        for _, line in pairs(tracerLines.All) do if line then line.Visible = false end end
+    end
     -- Murder
     if _G.tracerMurderEnabled then
         for _, player in ipairs(Players:GetPlayers()) do
@@ -230,8 +268,8 @@ end
 local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "RoleESP_GUI"
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 400, 0, 400)
-frame.Position = UDim2.new(0.5, -200, 0.5, -200)
+frame.Size = UDim2.new(0, 400, 0, 430)
+frame.Position = UDim2.new(0.5, -200, 0.5, -215)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -361,7 +399,7 @@ local function createTracerCheckbox(labelText, offsetY, flagName)
         state = not state
         check.Visible = state
         _G[flagName] = state
-        if not ( _G.tracerMurderEnabled or _G.tracerSheriffEnabled ) then
+        if not (_G.tracerAllEnabled or _G.tracerMurderEnabled or _G.tracerSheriffEnabled) then
             removeAllTracers()
         end
     end)
@@ -369,6 +407,7 @@ end
 
 createTracerCheckbox("Tracer Murder", 310, "tracerMurderEnabled")
 createTracerCheckbox("Tracer Sheriff", 340, "tracerSheriffEnabled")
+createTracerCheckbox("Tracer All", 370, "tracerAllEnabled")
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.Insert then
@@ -388,6 +427,12 @@ for _, player in ipairs(Players:GetPlayers()) do
 end
 Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function() wait(0.1) updateOutlineEsp() end)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    if tracerLines.All[player] then tracerLines.All[player]:Remove() tracerLines.All[player] = nil end
+    if tracerLines.Murder[player] then tracerLines.Murder[player]:Remove() tracerLines.Murder[player] = nil end
+    if tracerLines.Sheriff[player] then tracerLines.Sheriff[player]:Remove() tracerLines.Sheriff[player] = nil end
 end)
 
 RunService.RenderStepped:Connect(function()
