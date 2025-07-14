@@ -9,6 +9,7 @@ local LocalPlayer = Players.LocalPlayer
 _G.espBoxEnabled = false
 _G.espMurderEnabled = false
 _G.espSheriffEnabled = false
+_G.outlineEspEnabled = false
 
 -- 📦 Хранилище ESP
 local espCache = {}
@@ -20,6 +21,15 @@ local function createBox(color)
 	box.Thickness = 2
 	box.Color = color
 	return box
+end
+
+local function createOutline(color)
+	local outline = Drawing.new("Square")
+	outline.Visible = false
+	outline.Filled = false
+	outline.Thickness = 4
+	outline.Color = color
+	return outline
 end
 
 local function getRole(player)
@@ -40,7 +50,8 @@ local function addEsp(player)
 	espCache[player] = {
 		Box = createBox(Color3.fromRGB(255, 255, 255)),
 		Murder = createBox(Color3.fromRGB(255, 0, 0)),
-		Sheriff = createBox(Color3.fromRGB(0, 150, 255))
+		Sheriff = createBox(Color3.fromRGB(0, 150, 255)),
+		Outline = createOutline(Color3.fromRGB(0,255,0)),
 	}
 end
 
@@ -72,18 +83,33 @@ local function updateEsp(player, boxes)
 
 	local role = getRole(player)
 
-	boxes.Box.Visible = _G.espBoxEnabled
-	boxes.Murder.Visible = _G.espMurderEnabled and role == "Murderer"
-	boxes.Sheriff.Visible = _G.espSheriffEnabled and role == "Sheriff"
+	-- Outline ESP
+	boxes.Outline.Visible = _G.outlineEspEnabled
+	if _G.outlineEspEnabled then
+		boxes.Outline.Size = Vector2.new(width+6, height+6)
+		boxes.Outline.Position = Vector2.new(x-3, y-3)
+	else
+		boxes.Outline.Visible = false
+	end
 
-	if boxes.Box.Visible then
+	-- Box ESP
+	boxes.Box.Visible = _G.espBoxEnabled
+	if _G.espBoxEnabled then
 		boxes.Box.Size = Vector2.new(width, height)
 		boxes.Box.Position = Vector2.new(x, y)
+	else
+		boxes.Box.Visible = false
 	end
+
+	-- Murder ESP
+	boxes.Murder.Visible = _G.espMurderEnabled and role == "Murderer"
 	if boxes.Murder.Visible then
 		boxes.Murder.Size = Vector2.new(width, height)
 		boxes.Murder.Position = Vector2.new(x, y)
 	end
+
+	-- Sheriff ESP
+	boxes.Sheriff.Visible = _G.espSheriffEnabled and role == "Sheriff"
 	if boxes.Sheriff.Visible then
 		boxes.Sheriff.Size = Vector2.new(width, height)
 		boxes.Sheriff.Position = Vector2.new(x, y)
@@ -95,8 +121,8 @@ local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "RoleESP_GUI"
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 400, 0, 220)
-frame.Position = UDim2.new(0.5, -200, 0.5, -110) -- Центр экрана
+frame.Size = UDim2.new(0, 400, 0, 320)
+frame.Position = UDim2.new(0.5, -200, 0.5, -160)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -111,7 +137,7 @@ title.Font = Enum.Font.SourceSansBold
 title.TextSize = 22
 title.BorderSizePixel = 0
 
--- 📦 Чекбокс-шаблон
+-- 📦 Шаблон чекбокса
 local function createCheckbox(labelText, offsetY, callback)
 	local toggleFrame = Instance.new("Frame")
 	toggleFrame.Size = UDim2.new(0, 180, 0, 22)
@@ -157,15 +183,15 @@ local function createCheckbox(labelText, offsetY, callback)
 	end)
 end
 
--- 📦 Чекбоксы вертикально
+-- 📦 Первая группа чекбоксов (Box/Murder/Sheriff)
 createCheckbox("Box ESP",     50, function(v) _G.espBoxEnabled = v end)
 createCheckbox("Murder ESP",  80, function(v) _G.espMurderEnabled = v end)
 createCheckbox("Sheriff ESP", 110, function(v) _G.espSheriffEnabled = v end)
 
--- 📝 Текст outline
+-- 📝 Надпись outline-раздела
 local outlineText = Instance.new("TextLabel")
-outlineText.Size = UDim2.new(1, -20, 0, 20)
-outlineText.Position = UDim2.new(0, 20, 0, 150)
+outlineText.Size = UDim2.new(1, -20, 0, 22)
+outlineText.Position = UDim2.new(0, 20, 0, 155)
 outlineText.BackgroundTransparency = 1
 outlineText.Text = "outline"
 outlineText.Font = Enum.Font.SourceSansBold
@@ -173,6 +199,12 @@ outlineText.TextSize = 16
 outlineText.TextColor3 = Color3.fromRGB(200, 200, 200)
 outlineText.TextXAlignment = Enum.TextXAlignment.Left
 outlineText.Parent = frame
+
+-- 📦 Вторая группа чекбоксов (Outline/Box/Murder/Sheriff) ПОД outline
+createCheckbox("Outline ESP", 180, function(v) _G.outlineEspEnabled = v end)
+createCheckbox("Box ESP",     210, function(v) _G.espBoxEnabled = v end)
+createCheckbox("Murder ESP",  240, function(v) _G.espMurderEnabled = v end)
+createCheckbox("Sheriff ESP", 270, function(v) _G.espSheriffEnabled = v end)
 
 -- 📦 Insert key: показать / скрыть меню
 UserInputService.InputBegan:Connect(function(input, processed)
