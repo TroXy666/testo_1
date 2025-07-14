@@ -10,10 +10,24 @@ _G.espBoxEnabled = false
 _G.espMurderEnabled = false
 _G.espSheriffEnabled = false
 _G.outlineEspEnabled = false
+_G.outlineMurderEnabled = false
+_G.outlineSheriffEnabled = false
 
 -- 📦 Хранилище ESP
 local espCache = {}
+local outlineCache = {}
 
+-- 📦 Кости для Skeleton (R15)
+local skeletonJoints = {
+	{"Head", "UpperTorso"},
+	{"UpperTorso", "LowerTorso"},
+	{"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+	{"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+	{"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+	{"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
+}
+
+-- 📦 Создание Box
 local function createBox(color)
 	local box = Drawing.new("Square")
 	box.Visible = false
@@ -23,47 +37,66 @@ local function createBox(color)
 	return box
 end
 
-local function createOutline(color)
-	local outline = Drawing.new("Square")
-	outline.Visible = false
-	outline.Filled = false
-	outline.Thickness = 4
-	outline.Color = color
-	return outline
+-- 📦 Создание skeleton outline
+local function createOutlineLines(color)
+	local lines = {}
+	for _ = 1, #skeletonJoints do
+		local line = Drawing.new("Line")
+		line.Visible = false
+		line.Color = color
+		line.Thickness = 2
+		lines[#lines + 1] = line
+	end
+	return lines
 end
 
+-- 📦 Проверка наличия части тела
+local function getPart(char, partName)
+	return char and char:FindFirstChild(partName)
+end
+
+-- 📦 Определение роли
 local function getRole(player)
 	local char = player.Character
 	local backpack = player:FindFirstChild("Backpack")
 	if not (char or backpack) then return "Innocent" end
-
 	local hasKnife = (char and char:FindFirstChild("Knife")) or (backpack and backpack:FindFirstChild("Knife"))
 	local hasGun = (char and char:FindFirstChild("Gun")) or (backpack and backpack:FindFirstChild("Gun"))
-
 	if hasKnife then return "Murderer"
 	elseif hasGun then return "Sheriff"
 	else return "Innocent" end
 end
 
+-- 📦 Добавить ESP/outline
 local function addEsp(player)
 	if espCache[player] then return end
 	espCache[player] = {
 		Box = createBox(Color3.fromRGB(255, 255, 255)),
 		Murder = createBox(Color3.fromRGB(255, 0, 0)),
-		Sheriff = createBox(Color3.fromRGB(0, 150, 255)),
-		Outline = createOutline(Color3.fromRGB(0,255,0)),
+		Sheriff = createBox(Color3.fromRGB(0, 150, 255))
+	}
+	-- Skeletons: белый, красный, синий
+	outlineCache[player] = {
+		All = createOutlineLines(Color3.fromRGB(255,255,255)),
+		Murder = createOutlineLines(Color3.fromRGB(255,0,0)),
+		Sheriff = createOutlineLines(Color3.fromRGB(0,150,255))
 	}
 end
 
 local function removeEsp(player)
 	if espCache[player] then
-		for _, box in pairs(espCache[player]) do
-			box:Remove()
-		end
+		for _, box in pairs(espCache[player]) do box:Remove() end
 		espCache[player] = nil
+	end
+	if outlineCache[player] then
+		for _, tab in pairs(outlineCache[player]) do
+			for _, line in pairs(tab) do line:Remove() end
+		end
+		outlineCache[player] = nil
 	end
 end
 
+-- 📦 Обновление Box ESP
 local function updateEsp(player, boxes)
 	local char = player.Character
 	if not char or not char:FindFirstChild("HumanoidRootPart") then
@@ -83,36 +116,56 @@ local function updateEsp(player, boxes)
 
 	local role = getRole(player)
 
-	-- Outline ESP
-	boxes.Outline.Visible = _G.outlineEspEnabled
-	if _G.outlineEspEnabled then
-		boxes.Outline.Size = Vector2.new(width+6, height+6)
-		boxes.Outline.Position = Vector2.new(x-3, y-3)
-	else
-		boxes.Outline.Visible = false
-	end
-
-	-- Box ESP
 	boxes.Box.Visible = _G.espBoxEnabled
-	if _G.espBoxEnabled then
+	boxes.Murder.Visible = _G.espMurderEnabled and role == "Murderer"
+	boxes.Sheriff.Visible = _G.espSheriffEnabled and role == "Sheriff"
+
+	if boxes.Box.Visible then
 		boxes.Box.Size = Vector2.new(width, height)
 		boxes.Box.Position = Vector2.new(x, y)
-	else
-		boxes.Box.Visible = false
 	end
-
-	-- Murder ESP
-	boxes.Murder.Visible = _G.espMurderEnabled and role == "Murderer"
 	if boxes.Murder.Visible then
 		boxes.Murder.Size = Vector2.new(width, height)
 		boxes.Murder.Position = Vector2.new(x, y)
 	end
-
-	-- Sheriff ESP
-	boxes.Sheriff.Visible = _G.espSheriffEnabled and role == "Sheriff"
 	if boxes.Sheriff.Visible then
 		boxes.Sheriff.Size = Vector2.new(width, height)
 		boxes.Sheriff.Position = Vector2.new(x, y)
+	end
+end
+
+-- 📦 Обновление outline (skeleton)
+local function updateSkeleton(player, outlines)
+	local char = player.Character
+	local role = getRole(player)
+	local useAll = _G.outlineEspEnabled
+	local useMurder = _G.outlineMurderEnabled and role == "Murderer"
+	local useSheriff = _G.outlineSheriffEnabled and role == "Sheriff"
+
+	for i, joint in ipairs(skeletonJoints) do
+		local part0 = getPart(char, joint[1])
+		local part1 = getPart(char, joint[2])
+		local drawList = {}
+		if useAll then table.insert(drawList, outlines.All[i]) end
+		if useMurder then table.insert(drawList, outlines.Murder[i]) end
+		if useSheriff then table.insert(drawList, outlines.Sheriff[i]) end
+
+		local visible = #drawList > 0 and part0 and part1
+		for _, l in pairs({outlines.All[i], outlines.Murder[i], outlines.Sheriff[i]}) do
+			l.Visible = false
+		end
+
+		if visible then
+			local a, aok = Camera:WorldToViewportPoint(part0.Position)
+			local b, bok = Camera:WorldToViewportPoint(part1.Position)
+			if aok and bok then
+				for _, l in ipairs(drawList) do
+					l.From = Vector2.new(a.X, a.Y)
+					l.To = Vector2.new(b.X, b.Y)
+					l.Visible = true
+				end
+			end
+		end
 	end
 end
 
@@ -121,8 +174,8 @@ local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "RoleESP_GUI"
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 400, 0, 320)
-frame.Position = UDim2.new(0.5, -200, 0.5, -160)
+frame.Size = UDim2.new(0, 400, 0, 360)
+frame.Position = UDim2.new(0.5, -200, 0.5, -180)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -191,44 +244,4 @@ createCheckbox("Sheriff ESP", 110, function(v) _G.espSheriffEnabled = v end)
 -- 📝 Надпись outline-раздела
 local outlineText = Instance.new("TextLabel")
 outlineText.Size = UDim2.new(1, -20, 0, 22)
-outlineText.Position = UDim2.new(0, 20, 0, 155)
-outlineText.BackgroundTransparency = 1
-outlineText.Text = "outline"
-outlineText.Font = Enum.Font.SourceSansBold
-outlineText.TextSize = 16
-outlineText.TextColor3 = Color3.fromRGB(200, 200, 200)
-outlineText.TextXAlignment = Enum.TextXAlignment.Left
-outlineText.Parent = frame
-
--- 📦 Вторая группа чекбоксов (Outline/Box/Murder/Sheriff) ПОД outline
-createCheckbox("Outline ESP", 180, function(v) _G.outlineEspEnabled = v end)
-createCheckbox("Box ESP",     210, function(v) _G.espBoxEnabled = v end)
-createCheckbox("Murder ESP",  240, function(v) _G.espMurderEnabled = v end)
-createCheckbox("Sheriff ESP", 270, function(v) _G.espSheriffEnabled = v end)
-
--- 📦 Insert key: показать / скрыть меню
-UserInputService.InputBegan:Connect(function(input, processed)
-	if not processed and input.KeyCode == Enum.KeyCode.Insert then
-		frame.Visible = not frame.Visible
-	end
-end)
-
--- 📦 Подключение игроков
-for _, p in pairs(Players:GetPlayers()) do
-	if p ~= LocalPlayer then addEsp(p) end
-end
-
-Players.PlayerAdded:Connect(function(p)
-	if p ~= LocalPlayer then addEsp(p) end
-end)
-
-Players.PlayerRemoving:Connect(removeEsp)
-
--- 📦 Главный цикл
-RunService.RenderStepped:Connect(function()
-	for player, data in pairs(espCache) do
-		if player and player ~= LocalPlayer then
-			updateEsp(player, data)
-		end
-	end
-end)
+outlineText.Position = UDim2.new(0
