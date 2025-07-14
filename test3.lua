@@ -244,4 +244,48 @@ createCheckbox("Sheriff ESP", 110, function(v) _G.espSheriffEnabled = v end)
 -- 📝 Надпись outline-раздела
 local outlineText = Instance.new("TextLabel")
 outlineText.Size = UDim2.new(1, -20, 0, 22)
-outlineText.Position = UDim2.new(0
+outlineText.Position = UDim2.new(0, 20, 0, 155)
+outlineText.BackgroundTransparency = 1
+outlineText.Text = "outline"
+outlineText.Font = Enum.Font.SourceSansBold
+outlineText.TextSize = 16
+outlineText.TextColor3 = Color3.fromRGB(200, 200, 200)
+outlineText.TextXAlignment = Enum.TextXAlignment.Left
+outlineText.Parent = frame
+
+-- 📦 Вторая группа чекбоксов (Outline ESP/Outline Murder/Outline Sheriff)
+createCheckbox("Outline ESP",     180, function(v) _G.outlineEspEnabled = v end)
+createCheckbox("Outline Murder",  210, function(v) _G.outlineMurderEnabled = v end)
+createCheckbox("Outline Sheriff", 240, function(v) _G.outlineSheriffEnabled = v end)
+
+-- 📦 Insert key: показать / скрыть меню
+UserInputService.InputBegan:Connect(function(input, processed)
+	if not processed and input.KeyCode == Enum.KeyCode.Insert then
+		frame.Visible = not frame.Visible
+	end
+end)
+
+-- 📦 Подключение игроков
+for _, p in pairs(Players:GetPlayers()) do
+	if p ~= LocalPlayer then addEsp(p) end
+end
+
+Players.PlayerAdded:Connect(function(p)
+	if p ~= LocalPlayer then addEsp(p) end
+end)
+
+Players.PlayerRemoving:Connect(removeEsp)
+
+-- 📦 Главный цикл
+RunService.RenderStepped:Connect(function()
+	for player, data in pairs(espCache) do
+		if player and player ~= LocalPlayer then
+			updateEsp(player, data)
+		end
+	end
+	for player, data in pairs(outlineCache) do
+		if player and player ~= LocalPlayer then
+			updateSkeleton(player, data)
+		end
+	end
+end)
