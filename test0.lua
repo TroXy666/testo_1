@@ -1,6 +1,7 @@
 -- 📦 Сервисы
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
@@ -9,7 +10,7 @@ _G.espBoxEnabled = false
 _G.espMurderEnabled = false
 _G.espSheriffEnabled = false
 
--- 📦 Роли и Drawing Box'ы
+-- 📦 Хранилище ESP
 local espCache = {}
 
 local function createBox(color)
@@ -71,48 +72,38 @@ local function updateEsp(player, boxes)
 
 	local role = getRole(player)
 
-	-- All
-	if _G.espBoxEnabled then
+	boxes.Box.Visible = _G.espBoxEnabled
+	boxes.Murder.Visible = _G.espMurderEnabled and role == "Murderer"
+	boxes.Sheriff.Visible = _G.espSheriffEnabled and role == "Sheriff"
+
+	if boxes.Box.Visible then
 		boxes.Box.Size = Vector2.new(width, height)
 		boxes.Box.Position = Vector2.new(x, y)
-		boxes.Box.Visible = true
-	else
-		boxes.Box.Visible = false
 	end
-
-	-- Murder
-	if _G.espMurderEnabled and role == "Murderer" then
+	if boxes.Murder.Visible then
 		boxes.Murder.Size = Vector2.new(width, height)
 		boxes.Murder.Position = Vector2.new(x, y)
-		boxes.Murder.Visible = true
-	else
-		boxes.Murder.Visible = false
 	end
-
-	-- Sheriff
-	if _G.espSheriffEnabled and role == "Sheriff" then
+	if boxes.Sheriff.Visible then
 		boxes.Sheriff.Size = Vector2.new(width, height)
 		boxes.Sheriff.Position = Vector2.new(x, y)
-		boxes.Sheriff.Visible = true
-	else
-		boxes.Sheriff.Visible = false
 	end
 end
 
--- 📦 GUI создание
+-- 📦 GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "RoleESP_GUI"
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 400, 0, 110)
-frame.Position = UDim2.new(0, 60, 0, 150)
+frame.Size = UDim2.new(0, 400, 0, 220)
+frame.Position = UDim2.new(0.5, -200, 0.5, -110) -- Центр экрана
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 35)
+title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 title.Text = "ROLE ESP"
 title.TextColor3 = Color3.new(1, 1, 1)
@@ -120,11 +111,11 @@ title.Font = Enum.Font.SourceSansBold
 title.TextSize = 22
 title.BorderSizePixel = 0
 
--- 📦 Шаблон чекбокса
-local function createCheckbox(labelText, posX, callback)
+-- 📦 Чекбокс-шаблон
+local function createCheckbox(labelText, offsetY, callback)
 	local toggleFrame = Instance.new("Frame")
-	toggleFrame.Size = UDim2.new(0, 130, 0, 22)
-	toggleFrame.Position = UDim2.new(0, posX, 0, 50)
+	toggleFrame.Size = UDim2.new(0, 180, 0, 22)
+	toggleFrame.Position = UDim2.new(0, 20, 0, offsetY)
 	toggleFrame.BackgroundTransparency = 1
 	toggleFrame.Parent = frame
 
@@ -166,22 +157,37 @@ local function createCheckbox(labelText, posX, callback)
 	end)
 end
 
--- 📦 Чекбоксы
-createCheckbox("Box ESP",     20, function(v) _G.espBoxEnabled = v end)
-createCheckbox("Murder ESP",  150, function(v) _G.espMurderEnabled = v end)
-createCheckbox("Sheriff ESP", 280, function(v) _G.espSheriffEnabled = v end)
+-- 📦 Чекбоксы вертикально
+createCheckbox("Box ESP",     50, function(v) _G.espBoxEnabled = v end)
+createCheckbox("Murder ESP",  80, function(v) _G.espMurderEnabled = v end)
+createCheckbox("Sheriff ESP", 110, function(v) _G.espSheriffEnabled = v end)
+
+-- 📝 Текст outline
+local outlineText = Instance.new("TextLabel")
+outlineText.Size = UDim2.new(1, -20, 0, 20)
+outlineText.Position = UDim2.new(0, 20, 0, 150)
+outlineText.BackgroundTransparency = 1
+outlineText.Text = "outline"
+outlineText.Font = Enum.Font.SourceSansBold
+outlineText.TextSize = 16
+outlineText.TextColor3 = Color3.fromRGB(200, 200, 200)
+outlineText.TextXAlignment = Enum.TextXAlignment.Left
+outlineText.Parent = frame
+
+-- 📦 Insert key: показать / скрыть меню
+UserInputService.InputBegan:Connect(function(input, processed)
+	if not processed and input.KeyCode == Enum.KeyCode.Insert then
+		frame.Visible = not frame.Visible
+	end
+end)
 
 -- 📦 Подключение игроков
-for _, player in pairs(Players:GetPlayers()) do
-	if player ~= LocalPlayer then
-		addEsp(player)
-	end
+for _, p in pairs(Players:GetPlayers()) do
+	if p ~= LocalPlayer then addEsp(p) end
 end
 
-Players.PlayerAdded:Connect(function(player)
-	if player ~= LocalPlayer then
-		addEsp(player)
-	end
+Players.PlayerAdded:Connect(function(p)
+	if p ~= LocalPlayer then addEsp(p) end
 end)
 
 Players.PlayerRemoving:Connect(removeEsp)
