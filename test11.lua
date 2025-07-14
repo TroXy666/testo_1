@@ -1,4 +1,4 @@
--- Сервисы
+-- Сервисы и базовые переменные
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -6,8 +6,9 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 
--- Флаги и кэш
 local currentTab = "ESP"
+
+-- Глобальные состояния
 _G.espBoxEnabled = false
 _G.espMurderEnabled = false
 _G.espSheriffEnabled = false
@@ -22,7 +23,222 @@ _G.otherDistanceEnabled = false
 _G.otherPingEnabled = false
 _G.otherSkeletonEnabled = false
 _G.otherRoleEnabled = false
+_G.chamsAllEnabled = false
+_G.chamsMurderEnabled = false
+_G.chamsSheriffEnabled = false
 
+-- ========================== GUI ==========================
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "RoleESP_GUI"
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 320, 0, 420)
+frame.Position = UDim2.new(0.5, -160, 0.5, -210)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+
+local menuTitle = Instance.new("TextLabel", frame)
+menuTitle.Size = UDim2.new(1, 0, 0, 40)
+menuTitle.Position = UDim2.new(0, 0, 0, 0)
+menuTitle.BackgroundTransparency = 1
+menuTitle.Text = "menu"
+menuTitle.TextColor3 = Color3.new(1, 1, 1)
+menuTitle.Font = Enum.Font.SourceSansBold
+menuTitle.TextSize = 32
+menuTitle.TextXAlignment = Enum.TextXAlignment.Center
+
+local tabFrame = Instance.new("Frame", frame)
+tabFrame.Size = UDim2.new(1, 0, 0, 34)
+tabFrame.Position = UDim2.new(0, 0, 0, 40)
+tabFrame.BackgroundTransparency = 1
+tabFrame.BorderSizePixel = 0
+
+local tabEsp = Instance.new("TextButton", tabFrame)
+tabEsp.Size = UDim2.new(0, 70, 1, 0)
+tabEsp.Position = UDim2.new(0, 15, 0, 0)
+tabEsp.BackgroundColor3 = Color3.fromRGB(30, 120, 255)
+tabEsp.TextColor3 = Color3.fromRGB(255,255,255)
+tabEsp.Font = Enum.Font.SourceSansBold
+tabEsp.Text = "ESP"
+tabEsp.TextSize = 20
+tabEsp.BorderSizePixel = 0
+
+local tabChams = Instance.new("TextButton", tabFrame)
+tabChams.Size = UDim2.new(0, 90, 1, 0)
+tabChams.Position = UDim2.new(0, 100, 0, 0)
+tabChams.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+tabChams.TextColor3 = Color3.fromRGB(255,255,255)
+tabChams.Font = Enum.Font.SourceSansBold
+tabChams.Text = "CHAMS"
+tabChams.TextSize = 20
+tabChams.BorderSizePixel = 0
+
+local scroll = Instance.new("ScrollingFrame", frame)
+scroll.Size = UDim2.new(1, 0, 1, -74)
+scroll.Position = UDim2.new(0, 0, 0, 74)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 800)
+scroll.ScrollBarThickness = 8
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.Visible = true
+
+local chamsScroll = Instance.new("ScrollingFrame", frame)
+chamsScroll.Size = UDim2.new(1, 0, 1, -74)
+chamsScroll.Position = UDim2.new(0, 0, 0, 74)
+chamsScroll.CanvasSize = UDim2.new(0, 0, 0, 200)
+chamsScroll.ScrollBarThickness = 8
+chamsScroll.BackgroundTransparency = 1
+chamsScroll.BorderSizePixel = 0
+chamsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+chamsScroll.Visible = false
+
+local function setTab(tabName)
+    currentTab = tabName
+    if tabName == "ESP" then
+        scroll.Visible = true
+        chamsScroll.Visible = false
+        tabEsp.BackgroundColor3 = Color3.fromRGB(30, 120, 255)
+        tabChams.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    else
+        scroll.Visible = false
+        chamsScroll.Visible = true
+        tabEsp.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        tabChams.BackgroundColor3 = Color3.fromRGB(30, 120, 255)
+    end
+end
+
+tabEsp.MouseButton1Click:Connect(function() setTab("ESP") end)
+tabChams.MouseButton1Click:Connect(function() setTab("CHAMS") end)
+
+local function createCheckbox(labelText, offsetY, callback, parent)
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Size = UDim2.new(0, 220, 0, 26)
+    toggleFrame.Position = UDim2.new(0, 24, 0, offsetY)
+    toggleFrame.BackgroundTransparency = 1
+    toggleFrame.Parent = parent
+
+    local box = Instance.new("TextButton")
+    box.Size = UDim2.new(0, 22, 0, 22)
+    box.Position = UDim2.new(0, 0, 0, 2)
+    box.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    box.BorderColor3 = Color3.fromRGB(120, 120, 120)
+    box.BorderSizePixel = 1
+    box.Text = ""
+    box.AutoButtonColor = false
+    box.Parent = toggleFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -28, 1, 0)
+    label.Position = UDim2.new(0, 28, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 18
+    label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = toggleFrame
+
+    local check = Instance.new("TextLabel")
+    check.Size = UDim2.new(1, 0, 1, 0)
+    check.BackgroundTransparency = 1
+    check.Text = "✔"
+    check.TextColor3 = Color3.fromRGB(0, 170, 255)
+    check.TextSize = 18
+    check.Font = Enum.Font.SourceSansBold
+    check.Visible = false
+    check.Parent = box
+
+    local state = false
+    box.MouseButton1Click:Connect(function()
+        state = not state
+        check.Visible = state
+        if callback then callback(state) end
+    end)
+end
+
+-- ====== ESP CHECKBOXES ======
+local offset = 10
+createCheckbox("Box ESP", offset, function(v) _G.espBoxEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Murder ESP", offset, function(v) _G.espMurderEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Sheriff ESP", offset, function(v) _G.espSheriffEnabled = v end, scroll)
+offset = offset + 40
+
+local outlineText = Instance.new("TextLabel", scroll)
+outlineText.Size = UDim2.new(1, -20, 0, 26)
+outlineText.Position = UDim2.new(0, 24, 0, offset)
+outlineText.BackgroundTransparency = 1
+outlineText.Text = "outline"
+outlineText.Font = Enum.Font.SourceSansBold
+outlineText.TextSize = 18
+outlineText.TextColor3 = Color3.fromRGB(200, 200, 200)
+outlineText.TextXAlignment = Enum.TextXAlignment.Left
+offset = offset + 32
+
+createCheckbox("Outline ESP", offset, function(v) _G.outlineEspEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Outline Murder", offset, function(v) _G.outlineMurderEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Outline Sheriff", offset, function(v) _G.outlineSheriffEnabled = v end, scroll)
+offset = offset + 40
+
+local tracerLabel = Instance.new("TextLabel", scroll)
+tracerLabel.Size = UDim2.new(1, -20, 0, 26)
+tracerLabel.Position = UDim2.new(0, 24, 0, offset)
+tracerLabel.BackgroundTransparency = 1
+tracerLabel.Text = "tracer"
+tracerLabel.Font = Enum.Font.SourceSansBold
+tracerLabel.TextSize = 18
+tracerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+tracerLabel.TextXAlignment = Enum.TextXAlignment.Left
+offset = offset + 32
+
+createCheckbox("Tracer Murder", offset, function(v) _G.tracerMurderEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Tracer Sheriff", offset, function(v) _G.tracerSheriffEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Tracer All", offset, function(v) _G.tracerAllEnabled = v end, scroll)
+offset = offset + 40
+
+local otherLabel = Instance.new("TextLabel", scroll)
+otherLabel.Size = UDim2.new(1, -20, 0, 26)
+otherLabel.Position = UDim2.new(0, 24, 0, offset)
+otherLabel.BackgroundTransparency = 1
+otherLabel.Text = "other"
+otherLabel.Font = Enum.Font.SourceSansBold
+otherLabel.TextSize = 18
+otherLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+otherLabel.TextXAlignment = Enum.TextXAlignment.Left
+offset = offset + 32
+
+createCheckbox("Name", offset, function(v) _G.otherNameEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Distance", offset, function(v) _G.otherDistanceEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Ping", offset, function(v) _G.otherPingEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Skeleton", offset, function(v) _G.otherSkeletonEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Role", offset, function(v) _G.otherRoleEnabled = v end, scroll)
+
+-- ====== CHAMS CHECKBOXES ======
+local chamsOffset = 10
+createCheckbox("Chams all", chamsOffset, function(v) _G.chamsAllEnabled = v end, chamsScroll)
+chamsOffset = chamsOffset + 34
+createCheckbox("Chams murder", chamsOffset, function(v) _G.chamsMurderEnabled = v end, chamsScroll)
+chamsOffset = chamsOffset + 34
+createCheckbox("Chams sheriff", chamsOffset, function(v) _G.chamsSheriffEnabled = v end, chamsScroll)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Enum.KeyCode.Insert then
+        frame.Visible = not frame.Visible
+    end
+end)
+
+-- ========================== ФУНКЦИИ ESP ==========================
 -- ESP Box
 local espCache = {}
 local function createBox(color)
@@ -102,7 +318,7 @@ local function updateEsp(player, boxes)
     end
 end
 
--- Outline ESP
+-- Outline ESP (Highlight)
 local outlineHighlights = {}
 local outlineFolder = CoreGui:FindFirstChild("OutlineESPFolder") or Instance.new("Folder", CoreGui)
 outlineFolder.Name = "OutlineESPFolder"
@@ -154,7 +370,7 @@ local function updateOutlineEsp()
     end
 end
 
--- Tracer ESP
+-- Tracer ESP (All, Murder, Sheriff)
 local tracerLines = { All = {}, Murder = {}, Sheriff = {} }
 local function getTracerLine(t)
     local l = Drawing.new("Line")
@@ -168,13 +384,6 @@ local function getTracerLine(t)
         l.Color = Color3.fromRGB(255,255,255)
     end
     return l
-end
-
-local function removeAllTracers()
-    for _, t in pairs(tracerLines) do
-        for _, line in pairs(t) do if line then line:Remove() end end
-        table.clear(t)
-    end
 end
 
 local function updateTracers()
@@ -408,208 +617,6 @@ Players.PlayerRemoving:Connect(function(player)
     if skeletonLines[player] then for _, l in pairs(skeletonLines[player]) do l:Remove() end skeletonLines[player] = nil end
 end)
 
--- ========== GUI С ВКЛАДКАМИ ==========
-local gui = Instance.new("ScreenGui", CoreGui)
-gui.Name = "RoleESP_GUI"
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 400, 0, 400)
-frame.Position = UDim2.new(0.5, -200, 0.5, -200)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-
--- Вкладки
-local tabFrame = Instance.new("Frame", frame)
-tabFrame.Size = UDim2.new(1, 0, 0, 36)
-tabFrame.Position = UDim2.new(0, 0, 0, 0)
-tabFrame.BackgroundTransparency = 1
-tabFrame.BorderSizePixel = 0
-
-local tabEsp = Instance.new("TextButton", tabFrame)
-tabEsp.Size = UDim2.new(0, 80, 1, 0)
-tabEsp.Position = UDim2.new(0, 10, 0, 0)
-tabEsp.BackgroundColor3 = Color3.fromRGB(30, 120, 255)
-tabEsp.TextColor3 = Color3.fromRGB(255,255,255)
-tabEsp.Font = Enum.Font.SourceSansBold
-tabEsp.Text = "ESP"
-tabEsp.TextSize = 18
-tabEsp.BorderSizePixel = 0
-
-local tabChams = Instance.new("TextButton", tabFrame)
-tabChams.Size = UDim2.new(0, 100, 1, 0)
-tabChams.Position = UDim2.new(0, 110, 0, 0)
-tabChams.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-tabChams.TextColor3 = Color3.fromRGB(255,255,255)
-tabChams.Font = Enum.Font.SourceSansBold
-tabChams.Text = "CHAMS"
-tabChams.TextSize = 18
-tabChams.BorderSizePixel = 0
-
--- ScrollingFrames
-local scroll = Instance.new("ScrollingFrame", frame)
-scroll.Size = UDim2.new(1, 0, 1, -36)
-scroll.Position = UDim2.new(0, 0, 0, 36)
-scroll.CanvasSize = UDim2.new(0, 0, 0, 700)
-scroll.ScrollBarThickness = 8
-scroll.BackgroundTransparency = 1
-scroll.BorderSizePixel = 0
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.Visible = true
-
-local chamsScroll = Instance.new("ScrollingFrame", frame)
-chamsScroll.Size = UDim2.new(1, 0, 1, -36)
-chamsScroll.Position = UDim2.new(0, 0, 0, 36)
-chamsScroll.CanvasSize = UDim2.new(0, 0, 0, 300)
-chamsScroll.ScrollBarThickness = 8
-chamsScroll.BackgroundTransparency = 1
-chamsScroll.BorderSizePixel = 0
-chamsScroll.Visible = false
-
--- Обработка вкладок
-local function setTab(tabName)
-    currentTab = tabName
-    if tabName == "ESP" then
-        scroll.Visible = true
-        chamsScroll.Visible = false
-        tabEsp.BackgroundColor3 = Color3.fromRGB(30, 120, 255)
-        tabChams.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    else
-        scroll.Visible = false
-        chamsScroll.Visible = true
-        tabEsp.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        tabChams.BackgroundColor3 = Color3.fromRGB(30, 120, 255)
-    end
-end
-
-tabEsp.MouseButton1Click:Connect(function() setTab("ESP") end)
-tabChams.MouseButton1Click:Connect(function() setTab("CHAMS") end)
-
--- Чекбоксы в ESP
-local offset = 10
-local function createCheckbox(labelText, offsetY, callback)
-    local toggleFrame = Instance.new("Frame")
-    toggleFrame.Size = UDim2.new(0, 180, 0, 22)
-    toggleFrame.Position = UDim2.new(0, 20, 0, offsetY)
-    toggleFrame.BackgroundTransparency = 1
-    toggleFrame.Parent = scroll
-    local box = Instance.new("TextButton")
-    box.Size = UDim2.new(0, 18, 0, 18)
-    box.Position = UDim2.new(0, 0, 0, 2)
-    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    box.BorderColor3 = Color3.fromRGB(120, 120, 120)
-    box.Text = ""
-    box.AutoButtonColor = false
-    box.Parent = toggleFrame
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -22, 1, 0)
-    label.Position = UDim2.new(0, 22, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = labelText
-    label.Font = Enum.Font.SourceSans
-    label.TextSize = 16
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = toggleFrame
-    local check = Instance.new("TextLabel")
-    check.Size = UDim2.new(1, 0, 1, 0)
-    check.BackgroundTransparency = 1
-    check.Text = "✔"
-    check.TextColor3 = Color3.fromRGB(0, 170, 255)
-    check.TextSize = 16
-    check.Font = Enum.Font.SourceSansBold
-    check.Visible = false
-    check.Parent = box
-    local state = false
-    box.MouseButton1Click:Connect(function()
-        state = not state
-        check.Visible = state
-        callback(state)
-        updateOutlineEsp()
-    end)
-    offset = offset + 30
-end
-
-createCheckbox("Box ESP",     offset, function(v) _G.espBoxEnabled = v end)
-createCheckbox("Murder ESP",  offset, function(v) _G.espMurderEnabled = v end)
-createCheckbox("Sheriff ESP", offset, function(v) _G.espSheriffEnabled = v end)
-offset = offset + 10
-
-local outlineText = Instance.new("TextLabel")
-outlineText.Size = UDim2.new(1, -20, 0, 22)
-outlineText.Position = UDim2.new(0, 20, 0, offset)
-outlineText.BackgroundTransparency = 1
-outlineText.Text = "outline"
-outlineText.Font = Enum.Font.SourceSansBold
-outlineText.TextSize = 16
-outlineText.TextColor3 = Color3.fromRGB(200, 200, 200)
-outlineText.TextXAlignment = Enum.TextXAlignment.Left
-outlineText.Parent = scroll
-offset = offset + 30
-
-createCheckbox("Outline ESP",     offset, function(v) _G.outlineEspEnabled = v; updateOutlineEsp() end)
-createCheckbox("Outline Murder",  offset, function(v) _G.outlineMurderEnabled = v; updateOutlineEsp() end)
-createCheckbox("Outline Sheriff", offset, function(v) _G.outlineSheriffEnabled = v; updateOutlineEsp() end)
-offset = offset + 10
-
-local tracerLabel = Instance.new("TextLabel")
-tracerLabel.Size = UDim2.new(1, -20, 0, 22)
-tracerLabel.Position = UDim2.new(0, 20, 0, offset)
-tracerLabel.BackgroundTransparency = 1
-tracerLabel.Text = "tracer"
-tracerLabel.Font = Enum.Font.SourceSansBold
-tracerLabel.TextSize = 16
-tracerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-tracerLabel.TextXAlignment = Enum.TextXAlignment.Left
-tracerLabel.Parent = scroll
-offset = offset + 30
-
-createCheckbox("Tracer Murder",  offset, function(v) _G.tracerMurderEnabled = v end)
-createCheckbox("Tracer Sheriff", offset, function(v) _G.tracerSheriffEnabled = v end)
-createCheckbox("Tracer All",     offset, function(v) _G.tracerAllEnabled = v end)
-offset = offset + 10
-
-local otherLabel = Instance.new("TextLabel")
-otherLabel.Size = UDim2.new(1, -20, 0, 22)
-otherLabel.Position = UDim2.new(0, 20, 0, offset)
-otherLabel.BackgroundTransparency = 1
-otherLabel.Text = "other"
-otherLabel.Font = Enum.Font.SourceSansBold
-otherLabel.TextSize = 16
-otherLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-otherLabel.TextXAlignment = Enum.TextXAlignment.Left
-otherLabel.Parent = scroll
-offset = offset + 30
-
-createCheckbox("Name",     offset, function(v) _G.otherNameEnabled = v end)
-createCheckbox("Distance", offset, function(v) _G.otherDistanceEnabled = v end)
-createCheckbox("Ping",     offset, function(v) _G.otherPingEnabled = v end)
-createCheckbox("Skeleton", offset, function(v) _G.otherSkeletonEnabled = v end)
-createCheckbox("Role",     offset, function(v) _G.otherRoleEnabled = v end)
-
--- CHAMS TAB (пока только кнопки)
-local function createChamsButton(labelText, offsetY)
-    local btn = Instance.new("TextButton", chamsScroll)
-    btn.Size = UDim2.new(0, 160, 0, 32)
-    btn.Position = UDim2.new(0, 30, 0, offsetY)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 120, 160)
-    btn.Text = labelText
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 18
-    btn.BorderSizePixel = 0
-    -- btn.MouseButton1Click:Connect(function() ... end) -- здесь потом сделаешь функцию chams
-end
-createChamsButton("chams all", 30)
-createChamsButton("chams murder", 72)
-createChamsButton("chams sheriff", 114)
-
-UserInputService.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Enum.KeyCode.Insert then
-        frame.Visible = not frame.Visible
-    end
-end)
-
 for _, p in pairs(Players:GetPlayers()) do
     if p ~= LocalPlayer then addEsp(p) end
 end
@@ -623,7 +630,6 @@ end
 Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function() wait(0.1) updateOutlineEsp() end)
 end)
-
 Players.PlayerRemoving:Connect(function(player)
     if tracerLines.All[player] then tracerLines.All[player]:Remove() tracerLines.All[player] = nil end
     if tracerLines.Murder[player] then tracerLines.Murder[player]:Remove() tracerLines.Murder[player] = nil end
