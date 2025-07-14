@@ -407,12 +407,12 @@ Players.PlayerRemoving:Connect(function(player)
     if skeletonLines[player] then for _, l in pairs(skeletonLines[player]) do l:Remove() end skeletonLines[player] = nil end
 end)
 
--- GUI
+-- GUI (с прокруткой)
 local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "RoleESP_GUI"
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 400, 0, 600)
-frame.Position = UDim2.new(0.5, -200, 0.5, -300)
+frame.Size = UDim2.new(0, 400, 0, 400) -- фиксированная высота!
+frame.Position = UDim2.new(0.5, -200, 0.5, -200)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -427,12 +427,23 @@ title.Font = Enum.Font.SourceSansBold
 title.TextSize = 22
 title.BorderSizePixel = 0
 
+local scroll = Instance.new("ScrollingFrame", frame)
+scroll.Size = UDim2.new(1, 0, 1, -40)
+scroll.Position = UDim2.new(0, 0, 0, 40)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 700) -- Прокручиваемый контент
+scroll.ScrollBarThickness = 8
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local offset = 10
+
 local function createCheckbox(labelText, offsetY, callback)
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Size = UDim2.new(0, 180, 0, 22)
     toggleFrame.Position = UDim2.new(0, 20, 0, offsetY)
     toggleFrame.BackgroundTransparency = 1
-    toggleFrame.Parent = frame
+    toggleFrame.Parent = scroll
     local box = Instance.new("TextButton")
     box.Size = UDim2.new(0, 18, 0, 18)
     box.Position = UDim2.new(0, 0, 0, 2)
@@ -467,153 +478,65 @@ local function createCheckbox(labelText, offsetY, callback)
         callback(state)
         updateOutlineEsp()
     end)
+    offset = offset + 30
 end
 
-createCheckbox("Box ESP",     50, function(v) _G.espBoxEnabled = v end)
-createCheckbox("Murder ESP",  80, function(v) _G.espMurderEnabled = v end)
-createCheckbox("Sheriff ESP", 110, function(v) _G.espSheriffEnabled = v end)
+createCheckbox("Box ESP",     offset, function(v) _G.espBoxEnabled = v end)
+createCheckbox("Murder ESP",  offset, function(v) _G.espMurderEnabled = v end)
+createCheckbox("Sheriff ESP", offset, function(v) _G.espSheriffEnabled = v end)
+offset = offset + 10
 
 local outlineText = Instance.new("TextLabel")
 outlineText.Size = UDim2.new(1, -20, 0, 22)
-outlineText.Position = UDim2.new(0, 20, 0, 155)
+outlineText.Position = UDim2.new(0, 20, 0, offset)
 outlineText.BackgroundTransparency = 1
 outlineText.Text = "outline"
 outlineText.Font = Enum.Font.SourceSansBold
 outlineText.TextSize = 16
 outlineText.TextColor3 = Color3.fromRGB(200, 200, 200)
 outlineText.TextXAlignment = Enum.TextXAlignment.Left
-outlineText.Parent = frame
+outlineText.Parent = scroll
+offset = offset + 30
 
-createCheckbox("Outline ESP",     180, function(v) _G.outlineEspEnabled = v; updateOutlineEsp() end)
-createCheckbox("Outline Murder",  210, function(v) _G.outlineMurderEnabled = v; updateOutlineEsp() end)
-createCheckbox("Outline Sheriff", 240, function(v) _G.outlineSheriffEnabled = v; updateOutlineEsp() end)
+createCheckbox("Outline ESP",     offset, function(v) _G.outlineEspEnabled = v; updateOutlineEsp() end)
+createCheckbox("Outline Murder",  offset, function(v) _G.outlineMurderEnabled = v; updateOutlineEsp() end)
+createCheckbox("Outline Sheriff", offset, function(v) _G.outlineSheriffEnabled = v; updateOutlineEsp() end)
+offset = offset + 10
 
--- Tracer раздел
 local tracerLabel = Instance.new("TextLabel")
 tracerLabel.Size = UDim2.new(1, -20, 0, 22)
-tracerLabel.Position = UDim2.new(0, 20, 0, 285)
+tracerLabel.Position = UDim2.new(0, 20, 0, offset)
 tracerLabel.BackgroundTransparency = 1
 tracerLabel.Text = "tracer"
 tracerLabel.Font = Enum.Font.SourceSansBold
 tracerLabel.TextSize = 16
 tracerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 tracerLabel.TextXAlignment = Enum.TextXAlignment.Left
-tracerLabel.Parent = frame
+tracerLabel.Parent = scroll
+offset = offset + 30
 
-local function createTracerCheckbox(labelText, offsetY, flagName)
-    local toggleFrame = Instance.new("Frame")
-    toggleFrame.Size = UDim2.new(0, 180, 0, 22)
-    toggleFrame.Position = UDim2.new(0, 20, 0, offsetY)
-    toggleFrame.BackgroundTransparency = 1
-    toggleFrame.Parent = frame
+createCheckbox("Tracer Murder",  offset, function(v) _G.tracerMurderEnabled = v end)
+createCheckbox("Tracer Sheriff", offset, function(v) _G.tracerSheriffEnabled = v end)
+createCheckbox("Tracer All",     offset, function(v) _G.tracerAllEnabled = v end)
+offset = offset + 10
 
-    local box = Instance.new("TextButton")
-    box.Size = UDim2.new(0, 18, 0, 18)
-    box.Position = UDim2.new(0, 0, 0, 2)
-    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    box.BorderColor3 = Color3.fromRGB(120, 120, 120)
-    box.Text = ""
-    box.AutoButtonColor = false
-    box.Parent = toggleFrame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -22, 1, 0)
-    label.Position = UDim2.new(0, 22, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = labelText
-    label.Font = Enum.Font.SourceSans
-    label.TextSize = 16
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = toggleFrame
-
-    local check = Instance.new("TextLabel")
-    check.Size = UDim2.new(1, 0, 1, 0)
-    check.BackgroundTransparency = 1
-    check.Text = "✔"
-    check.TextColor3 = Color3.fromRGB(0, 170, 255)
-    check.TextSize = 16
-    check.Font = Enum.Font.SourceSansBold
-    check.Visible = false
-    check.Parent = box
-
-    local state = false
-    box.MouseButton1Click:Connect(function()
-        state = not state
-        check.Visible = state
-        _G[flagName] = state
-        if not (_G.tracerAllEnabled or _G.tracerMurderEnabled or _G.tracerSheriffEnabled) then
-            removeAllTracers()
-        end
-    end)
-end
-
-createTracerCheckbox("Tracer Murder", 310, "tracerMurderEnabled")
-createTracerCheckbox("Tracer Sheriff", 340, "tracerSheriffEnabled")
-createTracerCheckbox("Tracer All", 370, "tracerAllEnabled")
-
--- OTHER раздел
 local otherLabel = Instance.new("TextLabel")
 otherLabel.Size = UDim2.new(1, -20, 0, 22)
-otherLabel.Position = UDim2.new(0, 20, 0, 405)
+otherLabel.Position = UDim2.new(0, 20, 0, offset)
 otherLabel.BackgroundTransparency = 1
 otherLabel.Text = "other"
 otherLabel.Font = Enum.Font.SourceSansBold
 otherLabel.TextSize = 16
 otherLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 otherLabel.TextXAlignment = Enum.TextXAlignment.Left
-otherLabel.Parent = frame
+otherLabel.Parent = scroll
+offset = offset + 30
 
-local function createOtherCheckbox(labelText, offsetY, flagName)
-    local toggleFrame = Instance.new("Frame")
-    toggleFrame.Size = UDim2.new(0, 180, 0, 22)
-    toggleFrame.Position = UDim2.new(0, 20, 0, offsetY)
-    toggleFrame.BackgroundTransparency = 1
-    toggleFrame.Parent = frame
-
-    local box = Instance.new("TextButton")
-    box.Size = UDim2.new(0, 18, 0, 18)
-    box.Position = UDim2.new(0, 0, 0, 2)
-    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    box.BorderColor3 = Color3.fromRGB(120, 120, 120)
-    box.Text = ""
-    box.AutoButtonColor = false
-    box.Parent = toggleFrame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -22, 1, 0)
-    label.Position = UDim2.new(0, 22, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = labelText
-    label.Font = Enum.Font.SourceSans
-    label.TextSize = 16
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = toggleFrame
-
-    local check = Instance.new("TextLabel")
-    check.Size = UDim2.new(1, 0, 1, 0)
-    check.BackgroundTransparency = 1
-    check.Text = "✔"
-    check.TextColor3 = Color3.fromRGB(0, 170, 255)
-    check.TextSize = 16
-    check.Font = Enum.Font.SourceSansBold
-    check.Visible = false
-    check.Parent = box
-
-    local state = false
-    box.MouseButton1Click:Connect(function()
-        state = not state
-        check.Visible = state
-        _G[flagName] = state
-    end)
-end
-
-createOtherCheckbox("Name",     430, "otherNameEnabled")
-createOtherCheckbox("Distance", 460, "otherDistanceEnabled")
-createOtherCheckbox("Ping",     490, "otherPingEnabled")
-createOtherCheckbox("Skeleton", 520, "otherSkeletonEnabled")
-createOtherCheckbox("Role",     550, "otherRoleEnabled")
+createCheckbox("Name",     offset, function(v) _G.otherNameEnabled = v end)
+createCheckbox("Distance", offset, function(v) _G.otherDistanceEnabled = v end)
+createCheckbox("Ping",     offset, function(v) _G.otherPingEnabled = v end)
+createCheckbox("Skeleton", offset, function(v) _G.otherSkeletonEnabled = v end)
+createCheckbox("Role",     offset, function(v) _G.otherRoleEnabled = v end)
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.Insert then
