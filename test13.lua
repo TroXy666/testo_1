@@ -30,8 +30,8 @@ _G.otherRoleEnabled = false
 local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "RoleESP_GUI"
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 320, 0, 440)
-frame.Position = UDim2.new(0.5, -160, 0.5, -220)
+frame.Size = UDim2.new(0, 320, 0, 460)
+frame.Position = UDim2.new(0.5, -160, 0.5, -230)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -76,7 +76,7 @@ tabChams.BorderSizePixel = 0
 local scroll = Instance.new("ScrollingFrame", frame)
 scroll.Size = UDim2.new(1, 0, 1, -74)
 scroll.Position = UDim2.new(0, 0, 0, 74)
-scroll.CanvasSize = UDim2.new(0, 0, 0, 1000)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 1200)
 scroll.ScrollBarThickness = 8
 scroll.BackgroundTransparency = 1
 scroll.BorderSizePixel = 0
@@ -236,7 +236,53 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
--- ========== GUN ESP по пути game:GetService("Workspace").Workplace.GunDrop ==========
+-- ==== КЭШ ДЛЯ ИГРОКОВ ====
+local espCache = {}
+local function createBox(color)
+    local box = Drawing.new("Square")
+    box.Visible = false
+    box.Filled = false
+    box.Thickness = 2
+    box.Color = color
+    return box
+end
+
+local function getRole(player)
+    local char = player.Character
+    local backpack = player:FindFirstChild("Backpack")
+    if not (char or backpack) then return "Innocent" end
+    local hasKnife = (char and char:FindFirstChild("Knife")) or (backpack and backpack:FindFirstChild("Knife"))
+    local hasGun = (char and char:FindFirstChild("Gun")) or (backpack and backpack:FindFirstChild("Gun"))
+    if hasKnife then return "Murderer"
+    elseif hasGun then return "Sheriff"
+    else return "Innocent" end
+end
+
+local function addEsp(player)
+    if espCache[player] then return end
+    espCache[player] = {
+        Box = createBox(Color3.fromRGB(255, 255, 255)),
+        Murder = createBox(Color3.fromRGB(255, 0, 0)),
+        Sheriff = createBox(Color3.fromRGB(0, 150, 255))
+    }
+end
+
+local function removeEsp(player)
+    if espCache[player] then
+        for _, box in pairs(espCache[player]) do box:Remove() end
+        espCache[player] = nil
+    end
+end
+
+for _, p in pairs(Players:GetPlayers()) do
+    if p ~= LocalPlayer then addEsp(p) end
+end
+Players.PlayerAdded:Connect(function(p)
+    if p ~= LocalPlayer then addEsp(p) end
+end)
+Players.PlayerRemoving:Connect(removeEsp)
+
+-- ===== GUN ESP
 local gunBox = Drawing.new("Square")
 gunBox.Visible = false
 gunBox.Filled = false
@@ -259,9 +305,42 @@ local function getGunPart()
     return nil
 end
 
+-- ===== ESP + GUN RENDER LOOP =====
 RunService.RenderStepped:Connect(function()
-    local gun = getGunPart()
+    -- --- PLAYER ESP ---
+    for player, boxes in pairs(espCache) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local pos, vis = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+            if not vis then
+                for _, b in pairs(boxes) do b.Visible = false end
+            else
+                local scale = 1 / (pos.Z * math.tan(math.rad(Camera.FieldOfView / 2)) * 2) * 1000
+                local w, h = 4 * scale, 5 * scale
+                local x, y = pos.X - w/2, pos.Y - h/2
+                local role = getRole(player)
+                boxes.Box.Visible = _G.espBoxEnabled
+                boxes.Murder.Visible = _G.espMurderEnabled and role == "Murderer"
+                boxes.Sheriff.Visible = _G.espSheriffEnabled and role == "Sheriff"
+                if boxes.Box.Visible then
+                    boxes.Box.Size = Vector2.new(w, h)
+                    boxes.Box.Position = Vector2.new(x, y)
+                end
+                if boxes.Murder.Visible then
+                    boxes.Murder.Size = Vector2.new(w, h)
+                    boxes.Murder.Position = Vector2.new(x, y)
+                end
+                if boxes.Sheriff.Visible then
+                    boxes.Sheriff.Size = Vector2.new(w, h)
+                    boxes.Sheriff.Position = Vector2.new(x, y)
+                end
+            end
+        else
+            for _, b in pairs(boxes) do b.Visible = false end
+        end
+    end
 
+    -- --- GUN ESP ---
+    local gun = getGunPart()
     -- Box Gun
     if gun and _G.espGunEnabled then
         local pos, vis = Camera:WorldToViewportPoint(gun.Position)
@@ -292,7 +371,7 @@ RunService.RenderStepped:Connect(function()
         gunTracer.Visible = false
     end
 
-    -- Outline Gun (Highlight)
+    -- Outline Gun
     if gun and _G.outlineGunEnabled then
         if not gunHighlight then
             gunHighlight = Instance.new("Highlight", CoreGui)
