@@ -764,3 +764,5 @@ RunService.RenderStepped:Connect(function()
         if gunBillboard then gunBillboard.Enabled = false end
     end
 end)
+
+print("hello world")
