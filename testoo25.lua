@@ -81,22 +81,22 @@ createCheckbox("Outline Gun", offset, "outlineGunEnabled", scroll)
 offset = offset + 34
 createCheckbox("Distance Gun", offset, "otherDistanceGunEnabled", scroll)
 offset = offset + 34
-
 createCheckbox("Box ESP", offset, "espBoxEnabled", scroll)
 offset = offset + 34
 createCheckbox("Murder ESP", offset, "espMurderEnabled", scroll)
 offset = offset + 34
 createCheckbox("Sheriff ESP", offset, "espSheriffEnabled", scroll)
 offset = offset + 34
-createCheckbox("Role", offset, function(v) _G.otherRoleEnabled = v end, scroll)
+createCheckbox("Role", offset, "otherRoleEnabled", scroll)
 
 -- ====== CHAMS CHECKBOXES ======
 local chamsOffset = 10
-createCheckbox("Chams all", chamsOffset, function(v) _G.chamsAllEnabled = v end, chamsScroll)
+createCheckbox("Chams all", chamsOffset, "chamsAllEnabled", chamsScroll)
 chamsOffset = chamsOffset + 34
-createCheckbox("Chams murder", chamsOffset, function(v) _G.chamsMurderEnabled = v end, chamsScroll)
+createCheckbox("Chams murder", chamsOffset, "chamsMurderEnabled", chamsScroll)
 chamsOffset = chamsOffset + 34
-createCheckbox("Chams sheriff", chamsOffset, function(v) _G.chamsSheriffEnabled = v end, chamsScroll)
+createCheckbox("Chams sheriff", chamsOffset, "chamsSheriffEnabled", chamsScroll)
+
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.Insert then
