@@ -1,4 +1,14 @@
--- ================== Глобальные состояния ==================
+-- Сервисы и базовые переменные
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+
+local currentTab = "ESP"
+
+-- Глобальные состояния
 _G.espBoxEnabled = false
 _G.espGunEnabled = false
 _G.espMurderEnabled = false
@@ -21,20 +31,12 @@ _G.chamsAllEnabled = false
 _G.chamsMurderEnabled = false
 _G.chamsSheriffEnabled = false
 
--- ================== Сервисы ==================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
-local CoreGui = game:GetService("CoreGui")
-
--- ================== ГУИ ==================
+-- ========================== GUI ==========================
 local gui = Instance.new("ScreenGui", CoreGui)
 gui.Name = "RoleESP_GUI"
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 320, 0, 520)
-frame.Position = UDim2.new(0.5, -160, 0.5, -260)
+frame.Size = UDim2.new(0, 320, 0, 500)
+frame.Position = UDim2.new(0.5, -160, 0.5, -250)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -77,9 +79,9 @@ tabChams.TextSize = 20
 tabChams.BorderSizePixel = 0
 
 local scroll = Instance.new("ScrollingFrame", frame)
-scroll.Size = UDim2.new(1, 0, 1, -48)
-scroll.Position = UDim2.new(0, 0, 0, 48)
-scroll.CanvasSize = UDim2.new(0, 0, 0, 2000)
+scroll.Size = UDim2.new(1, 0, 1, -74)
+scroll.Position = UDim2.new(0, 0, 0, 74)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 1200)
 scroll.ScrollBarThickness = 8
 scroll.BackgroundTransparency = 1
 scroll.BorderSizePixel = 0
@@ -87,16 +89,15 @@ scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scroll.Visible = true
 
 local chamsScroll = Instance.new("ScrollingFrame", frame)
-chamsScroll.Size = UDim2.new(1, 0, 1, -48)
-chamsScroll.Position = UDim2.new(0, 0, 0, 48)
-chamsScroll.CanvasSize = UDim2.new(0, 0, 0, 500)
+chamsScroll.Size = UDim2.new(1, 0, 1, -74)
+chamsScroll.Position = UDim2.new(0, 0, 0, 74)
+chamsScroll.CanvasSize = UDim2.new(0, 0, 0, 200)
 chamsScroll.ScrollBarThickness = 8
 chamsScroll.BackgroundTransparency = 1
 chamsScroll.BorderSizePixel = 0
 chamsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 chamsScroll.Visible = false
 
-local currentTab = "ESP"
 local function setTab(tabName)
     currentTab = tabName
     if tabName == "ESP" then
@@ -111,17 +112,11 @@ local function setTab(tabName)
         tabChams.BackgroundColor3 = Color3.fromRGB(30, 120, 255)
     end
 end
+
 tabEsp.MouseButton1Click:Connect(function() setTab("ESP") end)
 tabChams.MouseButton1Click:Connect(function() setTab("CHAMS") end)
 
-UserInputService.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Enum.KeyCode.Insert then
-        frame.Visible = not frame.Visible
-    end
-end)
-
--- ================== ЧЕКБОКСЫ ==================
-local function createCheckbox(labelText, offsetY, globalVarName, parent)
+local function createCheckbox(labelText, offsetY, callback, parent)
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Size = UDim2.new(0, 220, 0, 26)
     toggleFrame.Position = UDim2.new(0, 24, 0, offsetY)
@@ -156,84 +151,109 @@ local function createCheckbox(labelText, offsetY, globalVarName, parent)
     check.TextColor3 = Color3.fromRGB(0, 170, 255)
     check.TextSize = 18
     check.Font = Enum.Font.SourceSansBold
-    check.Visible = _G[globalVarName]
+    check.Visible = false
     check.Parent = box
 
-    -- при запуске
-    if _G[globalVarName] then
-        check.Visible = true
-    end
-
+    local state = false
     box.MouseButton1Click:Connect(function()
-        _G[globalVarName] = not _G[globalVarName]
-        check.Visible = _G[globalVarName]
+        state = not state
+        check.Visible = state
+        if callback then callback(state) end
     end)
 end
 
--- ================== Создание чекбоксов (ESP) ==================
+-- ====== ESP CHECKBOXES ======
 local offset = 10
-createCheckbox("Box Gun", offset, "espGunEnabled", scroll)
+createCheckbox("Box Gun", offset, function(v) _G.espGunEnabled = v end, scroll)
 offset = offset + 34
-createCheckbox("Tracer Gun", offset, "tracerGunEnabled", scroll)
+createCheckbox("Tracer Gun", offset, function(v) _G.tracerGunEnabled = v end, scroll)
 offset = offset + 34
-createCheckbox("Outline Gun", offset, "outlineGunEnabled", scroll)
+createCheckbox("Outline Gun", offset, function(v) _G.outlineGunEnabled = v end, scroll)
 offset = offset + 34
-createCheckbox("Distance Gun", offset, "otherDistanceGunEnabled", scroll)
-offset = offset + 34
-createCheckbox("Box ESP", offset, "espBoxEnabled", scroll)
-offset = offset + 34
-createCheckbox("Murder ESP", offset, "espMurderEnabled", scroll)
-offset = offset + 34
-createCheckbox("Sheriff ESP", offset, "espSheriffEnabled", scroll)
-offset = offset + 34
-createCheckbox("Outline ESP", offset, "outlineEspEnabled", scroll)
-offset = offset + 34
-createCheckbox("Outline Murder", offset, "outlineMurderEnabled", scroll)
-offset = offset + 34
-createCheckbox("Outline Sheriff", offset, "outlineSheriffEnabled", scroll)
-offset = offset + 34
-createCheckbox("Tracer All", offset, "tracerAllEnabled", scroll)
-offset = offset + 34
-createCheckbox("Tracer Murder", offset, "tracerMurderEnabled", scroll)
-offset = offset + 34
-createCheckbox("Tracer Sheriff", offset, "tracerSheriffEnabled", scroll)
-offset = offset + 34
-createCheckbox("Name", offset, "otherNameEnabled", scroll)
-offset = offset + 34
-createCheckbox("Distance", offset, "otherDistanceEnabled", scroll)
-offset = offset + 34
-createCheckbox("Ping", offset, "otherPingEnabled", scroll)
-offset = offset + 34
-createCheckbox("Skeleton", offset, "otherSkeletonEnabled", scroll)
-offset = offset + 34
-createCheckbox("Role", offset, "otherRoleEnabled", scroll)
+createCheckbox("Distance Gun", offset, function(v) _G.otherDistanceGunEnabled = v end, scroll)
 offset = offset + 34
 
--- ================== Создание чекбоксов (CHAMS) ==================
+createCheckbox("Box ESP", offset, function(v) _G.espBoxEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Murder ESP", offset, function(v) _G.espMurderEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Sheriff ESP", offset, function(v) _G.espSheriffEnabled = v end, scroll)
+offset = offset + 40
+
+local outlineText = Instance.new("TextLabel", scroll)
+outlineText.Size = UDim2.new(1, -20, 0, 26)
+outlineText.Position = UDim2.new(0, 24, 0, offset)
+outlineText.BackgroundTransparency = 1
+outlineText.Text = "outline"
+outlineText.Font = Enum.Font.SourceSansBold
+outlineText.TextSize = 18
+outlineText.TextColor3 = Color3.fromRGB(200, 200, 200)
+outlineText.TextXAlignment = Enum.TextXAlignment.Left
+offset = offset + 32
+
+createCheckbox("Outline ESP", offset, function(v) _G.outlineEspEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Outline Murder", offset, function(v) _G.outlineMurderEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Outline Sheriff", offset, function(v) _G.outlineSheriffEnabled = v end, scroll)
+offset = offset + 40
+
+local tracerLabel = Instance.new("TextLabel", scroll)
+tracerLabel.Size = UDim2.new(1, -20, 0, 26)
+tracerLabel.Position = UDim2.new(0, 24, 0, offset)
+tracerLabel.BackgroundTransparency = 1
+tracerLabel.Text = "tracer"
+tracerLabel.Font = Enum.Font.SourceSansBold
+tracerLabel.TextSize = 18
+tracerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+tracerLabel.TextXAlignment = Enum.TextXAlignment.Left
+offset = offset + 32
+
+createCheckbox("Tracer Murder", offset, function(v) _G.tracerMurderEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Tracer Sheriff", offset, function(v) _G.tracerSheriffEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Tracer All", offset, function(v) _G.tracerAllEnabled = v end, scroll)
+offset = offset + 40
+
+local otherLabel = Instance.new("TextLabel", scroll)
+otherLabel.Size = UDim2.new(1, -20, 0, 26)
+otherLabel.Position = UDim2.new(0, 24, 0, offset)
+otherLabel.BackgroundTransparency = 1
+otherLabel.Text = "other"
+otherLabel.Font = Enum.Font.SourceSansBold
+otherLabel.TextSize = 18
+otherLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+otherLabel.TextXAlignment = Enum.TextXAlignment.Left
+offset = offset + 32
+
+createCheckbox("Name", offset, function(v) _G.otherNameEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Distance", offset, function(v) _G.otherDistanceEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Ping", offset, function(v) _G.otherPingEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Skeleton", offset, function(v) _G.otherSkeletonEnabled = v end, scroll)
+offset = offset + 34
+createCheckbox("Role", offset, function(v) _G.otherRoleEnabled = v end, scroll)
+
+-- ====== CHAMS CHECKBOXES ======
 local chamsOffset = 10
-createCheckbox("Chams all", chamsOffset, "chamsAllEnabled", chamsScroll)
+createCheckbox("Chams all", chamsOffset, function(v) _G.chamsAllEnabled = v end, chamsScroll)
 chamsOffset = chamsOffset + 34
-createCheckbox("Chams murder", chamsOffset, "chamsMurderEnabled", chamsScroll)
+createCheckbox("Chams murder", chamsOffset, function(v) _G.chamsMurderEnabled = v end, chamsScroll)
 chamsOffset = chamsOffset + 34
-createCheckbox("Chams sheriff", chamsOffset, "chamsSheriffEnabled", chamsScroll)
-chamsOffset = chamsOffset + 34
+createCheckbox("Chams sheriff", chamsOffset, function(v) _G.chamsSheriffEnabled = v end, chamsScroll)
 
--- ================== ESP КЕШИ ==================
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Enum.KeyCode.Insert then
+        frame.Visible = not frame.Visible
+    end
+end)
+
+-- ========================== ФУНКЦИИ ESP ==========================
+-- ESP Box
 local espCache = {}
-local outlineHighlights = {}
-local chamsHighlights = {}
-local billboards = {}
-local skeletonJoints = {
-    {"Head", "UpperTorso"},
-    {"UpperTorso", "LowerTorso"},
-    {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
-    {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
-    {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
-    {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
-}
-local skeletonLines = {}
-
--- ================== ESP Box ==================
 local function createBox(color)
     local box = Drawing.new("Square")
     box.Visible = false
@@ -271,10 +291,6 @@ local function removeEsp(player)
     if outlineHighlights[player] then
         outlineHighlights[player]:Destroy()
         outlineHighlights[player] = nil
-    end
-    if chamsHighlights[player] then
-        chamsHighlights[player]:Destroy()
-        chamsHighlights[player] = nil
     end
     if tracerLines.All[player] then tracerLines.All[player]:Remove() tracerLines.All[player] = nil end
     if tracerLines.Murder[player] then tracerLines.Murder[player]:Remove() tracerLines.Murder[player] = nil end
@@ -315,7 +331,8 @@ local function updateEsp(player, boxes)
     end
 end
 
--- ================== Outline ESP ==================
+-- Outline ESP (Highlight)
+local outlineHighlights = {}
 local outlineFolder = CoreGui:FindFirstChild("OutlineESPFolder") or Instance.new("Folder", CoreGui)
 outlineFolder.Name = "OutlineESPFolder"
 local colorAll = Color3.fromRGB(255, 255, 0)
@@ -366,58 +383,8 @@ local function updateOutlineEsp()
     end
 end
 
--- ================== Chams ESP ==================
-local chamsFolder = CoreGui:FindFirstChild("ChamsESPFolder") or Instance.new("Folder", CoreGui)
-chamsFolder.Name = "ChamsESPFolder"
-
-local function addChams(player, color)
-    if chamsHighlights[player] then
-        chamsHighlights[player].Adornee = player.Character
-        chamsHighlights[player].OutlineColor = color
-        chamsHighlights[player].FillColor = color
-        chamsHighlights[player].Enabled = true
-        return
-    end
-    local char = player.Character
-    if not char then return end
-    local highlight = Instance.new("Highlight", chamsFolder)
-    highlight.Adornee = char
-    highlight.OutlineColor = color
-    highlight.FillColor = color
-    highlight.FillTransparency = 0.6
-    highlight.Enabled = true
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    chamsHighlights[player] = highlight
-end
-
-local function removeChams(player)
-    if chamsHighlights[player] then
-        chamsHighlights[player]:Destroy()
-        chamsHighlights[player] = nil
-    end
-end
-
-local function updateChamsEsp()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local role = getRole(player)
-            if _G.chamsAllEnabled then
-                addChams(player, Color3.fromRGB(140, 140, 255))
-            elseif _G.chamsMurderEnabled and role == "Murderer" then
-                addChams(player, Color3.fromRGB(255, 0, 0))
-            elseif _G.chamsSheriffEnabled and role == "Sheriff" then
-                addChams(player, Color3.fromRGB(0, 150, 255))
-            else
-                removeChams(player)
-            end
-        else
-            removeChams(player)
-        end
-    end
-end
-
--- ================== Tracer ESP ==================
-tracerLines = { All = {}, Murder = {}, Sheriff = {} }
+-- Tracer ESP (All, Murder, Sheriff)
+local tracerLines = { All = {}, Murder = {}, Sheriff = {} }
 local function getTracerLine(t)
     local l = Drawing.new("Line")
     l.Visible = false
@@ -527,7 +494,18 @@ local function updateTracers()
     end
 end
 
--- ================== Other: Name, Distance, Ping, Role, Skeleton ==================
+-- Other: Name, Distance, Ping, Role (BillboardGui) + Skeleton (Drawing)
+local billboards = {}
+local skeletonJoints = {
+    {"Head", "UpperTorso"},
+    {"UpperTorso", "LowerTorso"},
+    {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+    {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+    {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+    {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
+}
+local skeletonLines = {}
+
 local function updateBillboards()
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then
@@ -537,6 +515,7 @@ local function updateBillboards()
             end
             continue
         end
+
         local char = player.Character
         local head = char and char:FindFirstChild("Head")
         if head and (_G.otherNameEnabled or _G.otherDistanceEnabled or _G.otherPingEnabled or _G.otherRoleEnabled) then
@@ -649,9 +628,6 @@ end
 Players.PlayerRemoving:Connect(function(player)
     if billboards[player] then billboards[player]:Destroy() billboards[player] = nil end
     if skeletonLines[player] then for _, l in pairs(skeletonLines[player]) do l:Remove() end skeletonLines[player] = nil end
-    removeEsp(player)
-    removeHighlight(player)
-    removeChams(player)
 end)
 
 for _, p in pairs(Players:GetPlayers()) do
@@ -698,7 +674,7 @@ local function getGunPart()
     return nil
 end
 
--- ============= Рендер =================
+-- ===== RenderStepped =====
 RunService.RenderStepped:Connect(function()
     for player, data in pairs(espCache) do
         if player and player ~= LocalPlayer then
@@ -706,7 +682,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
     updateOutlineEsp()
-    updateChamsEsp()
     updateTracers()
     updateBillboards()
     updateSkeletons()
@@ -789,5 +764,3 @@ RunService.RenderStepped:Connect(function()
         if gunBillboard then gunBillboard.Enabled = false end
     end
 end)
-
-print("ESP menu loaded!")
